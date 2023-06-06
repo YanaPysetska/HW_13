@@ -1,16 +1,36 @@
-#мой проверочный сайт https://bpa.com.ua/
 import requests
 import re
 from bs4 import BeautifulSoup
-
+import argparse
 class LinkChecker:
     def __init__(self, url=None):
         if url is None:
-            self.url = input("Введите URL: ")
+            self.get_link()
         else:
             self.url = url
         self.valid_urls = []
         self.invalid_urls = []
+
+    def get_link(self):
+        parser = argparse.ArgumentParser(description='URL parser')
+        parser.add_argument('-url', metavar='-url', type=str, help='Enter your URL')
+        args = parser.parse_args()
+
+        url = args.url
+        if self.check_link(url):
+            self.url=url
+        else:
+            print('Линка не валидная')
+
+    def check_link(self, url):
+        url_pattern = re.compile(
+            r'^(https?://)?'  # протокол
+            r'((([a-zA-Z0-9_\-]+)\.)+[a-zA-Z]{2,63}|'  # доменне ім'я
+            r'(([0-9]{1,3}\.){3}[0-9]{1,3}))'  # або IP-адреса
+            r'(:[0-9]{1,5})?'  # порт
+            r'(/.*)?$'  # шлях
+        )
+        return re.match(url_pattern, url)
 
     def extract_links(self):
         reqs = requests.get(self.url)
@@ -24,14 +44,9 @@ class LinkChecker:
                     self.invalid_urls.append(data)
                 else:
                     self.valid_urls.append(data)
-            else:
+            elif not data.startswith('/'):
                 self.invalid_urls.append(data)
-    def check_link(self, url):
-        if re.match(r'^(http|https)://', url) or url.endswith('.com') or url.endswith('.py'):
-            response = requests.get(url)
-            if response.status_code == 200:
-                return True
-            return False
+
     def save_valid_urls(self):
         with open("valid_urls.txt", "w") as valid_file:
             for url in self.valid_urls:
